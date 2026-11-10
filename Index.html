@@ -1,0 +1,480 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI phân loại rác</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    padding: 15px;
+    font-family: Arial, sans-serif;
+    background: #f3f5f7;
+    color: #222;
+}
+
+.container {
+    max-width: 550px;
+    margin: auto;
+    background: white;
+    padding: 18px;
+    border-radius: 15px;
+    text-align: center;
+}
+
+h2 { margin-top: 5px; }
+
+.camera-box {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background: #222;
+    border-radius: 12px;
+    overflow: hidden;
+    margin: 15px auto;
+}
+
+video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 15px 0;
+}
+
+button {
+    flex: 1;
+    min-width: 100px;
+    padding: 13px 8px;
+    border: none;
+    border-radius: 8px;
+    background: #1976d2;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+button:disabled {
+    opacity: 0.45;
+}
+
+.stop { background: #d32f2f; }
+
+#status {
+    font-size: 14px;
+    color: #555;
+    margin: 12px 0;
+    line-height: 1.5;
+}
+
+.best {
+    padding: 16px;
+    border-radius: 10px;
+    background: #e8f5e9;
+    margin: 15px 0;
+    font-weight: bold;
+}
+
+.best small {
+    display: block;
+    font-weight: normal;
+    margin-bottom: 7px;
+}
+
+.best strong {
+    font-size: 21px;
+}
+
+.result {
+    text-align: left;
+    margin-top: 20px;
+}
+
+.item { margin: 14px 0; }
+
+.item-title {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+
+.progress {
+    width: 100%;
+    height: 12px;
+    background: #e5e5e5;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.bar {
+    height: 100%;
+    width: 0;
+    background: #2196f3;
+    transition: width 0.2s;
+}
+
+.note {
+    font-size: 12px;
+    color: #777;
+    margin-top: 20px;
+}
+
+@media (max-width: 480px) {
+    body { padding: 8px; }
+    .container { padding: 12px; }
+    button { font-size: 13px; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h2>AI PHÂN LOẠI RÁC</h2>
+
+    <p>Đưa vật thể vào camera để AI nhận diện.</p>
+
+    <div class="camera-box">
+        <video id="video" autoplay muted playsinline></video>
+    </div>
+
+    <div class="controls">
+        <button id="startBtn" onclick="startCamera()">
+            Bật camera
+        </button>
+
+        <button id="switchBtn" onclick="switchCamera()" disabled>
+            Đổi camera
+        </button>
+
+        <button id="stopBtn" class="stop"
+                onclick="stopCamera()" disabled>
+            Tắt camera
+        </button>
+    </div>
+
+    <div id="status">
+        Nhấn Bật camera để bắt đầu.
+    </div>
+
+    <div class="best" id="bestResult">
+        <small>KẾT QUẢ NHẬN DIỆN</small>
+        <strong>Chưa có kết quả</strong>
+    </div>
+
+    <div class="result" id="label-container"></div>
+
+    <div class="note">
+        Kết quả AI chỉ mang tính tham khảo.
+        Hãy kiểm tra vật thể trước khi phân loại thực tế.
+    </div>
+
+</div>
+
+<script>
+
+// 1. ĐƯỜNG DẪN MÔ HÌNH
+const URL = "https://teachablemachine.withgoogle.com/models/AKXp-jRAe/";
+
+let model = null;
+let stream = null;
+let running = false;
+let loading = false;
+let currentFacing = "environment";
+let timer = null;
+
+const video = document.getElementById("video");
+const statusText = document.getElementById("status");
+const startBtn = document.getElementById("startBtn");
+const stopBtn = document.getElementById("stopBtn");
+const switchBtn = document.getElementById("switchBtn");
+const labelContainer = document.getElementById("label-container");
+const bestResult = document.getElementById("bestResult");
+
+// 2. TẢI MÔ HÌNH
+async function loadModel() {
+
+    if (model) return;
+
+    statusText.innerText = "Đang tải mô hình AI...";
+
+    const modelURL = URL + "model.json";
+    const metadataURL = URL + "metadata.json";
+
+    model = await tmImage.load(modelURL, metadataURL);
+
+    createLabels();
+}
+
+// 3. TẠO DANH SÁCH KẾT QUẢ
+function createLabels() {
+
+    labelContainer.innerHTML = "";
+
+    const total = model.getTotalClasses();
+
+    for (let i = 0; i < total; i++) {
+
+        const item = document.createElement("div");
+        item.className = "item";
+
+        const title = document.createElement("div");
+        title.className = "item-title";
+
+        const name = document.createElement("span");
+        const percent = document.createElement("span");
+
+        const progress = document.createElement("div");
+        progress.className = "progress";
+
+        const bar = document.createElement("div");
+        bar.className = "bar";
+
+        progress.appendChild(bar);
+        title.appendChild(name);
+        title.appendChild(percent);
+
+        item.appendChild(title);
+        item.appendChild(progress);
+
+        labelContainer.appendChild(item);
+    }
+}
+
+// 4. MỞ CAMERA
+async function startCamera() {
+
+    if (running || loading) return;
+
+    loading = true;
+    startBtn.disabled = true;
+
+    try {
+
+        if (!window.isSecureContext ||
+            !navigator.mediaDevices ||
+            !navigator.mediaDevices.getUserMedia) {
+
+            throw new Error("HTTPS_REQUIRED");
+        }
+
+        await loadModel();
+
+        statusText.innerText = "Đang mở camera...";
+
+        stream = await navigator.mediaDevices.getUserMedia({
+
+            audio: false,
+
+            video: {
+                facingMode: {
+                    ideal: currentFacing
+                },
+
+                width: {
+                    ideal: 640
+                },
+
+                height: {
+                    ideal: 480
+                },
+
+                frameRate: {
+                    ideal: 15,
+                    max: 20
+                }
+            }
+
+        });
+
+        video.srcObject = stream;
+
+        await new Promise(resolve => {
+            video.onloadedmetadata = resolve;
+        });
+
+        await video.play();
+
+        running = true;
+
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        switchBtn.disabled = false;
+
+        statusText.innerText =
+            "Camera đang hoạt động. Hãy đưa rác vào khung hình.";
+
+        predictLoop();
+
+    } catch (error) {
+
+        console.error(error);
+
+        let message = "Không thể mở camera.";
+
+        if (error.message === "HTTPS_REQUIRED") {
+            message = "Ứng dụng cần chạy trên HTTPS.";
+        }
+        else if (error.name === "NotAllowedError") {
+            message = "Bạn chưa cấp quyền sử dụng camera.";
+        }
+        else if (error.name === "NotFoundError") {
+            message = "Không tìm thấy camera trên thiết bị.";
+        }
+        else if (error.name === "NotReadableError") {
+            message = "Camera đang được ứng dụng khác sử dụng.";
+        }
+        else if (error.name === "OverconstrainedError") {
+            message = "Camera không hỗ trợ cấu hình yêu cầu.";
+        }
+
+        statusText.innerText = message;
+
+        stopCamera();
+
+    } finally {
+
+        loading = false;
+
+    }
+}
+
+// 5. NHẬN DIỆN VẬT THỂ
+async function predictLoop() {
+
+    if (!running) return;
+
+    try {
+
+        if (video.readyState >= 2) {
+
+            // Giữ nguyên thứ tự các Class của mô hình
+            const predictions = await model.predict(video);
+
+            if (!running) return;
+
+            let best = predictions[0];
+
+            predictions.forEach((p, index) => {
+
+                if (p.probability > best.probability) {
+                    best = p;
+                }
+
+                const item = labelContainer.children[index];
+
+                item.querySelector(
+                    ".item-title span:first-child"
+                ).innerText = p.className;
+
+                item.querySelector(
+                    ".item-title span:last-child"
+                ).innerText =
+                    (p.probability * 100).toFixed(1) + "%";
+
+                item.querySelector(".bar").style.width =
+                    (p.probability * 100) + "%";
+
+            });
+
+            bestResult.innerHTML =
+                "<small>KẾT QUẢ NHẬN DIỆN</small>" +
+                "<strong>" + escapeHTML(best.className) +
+                " - " +
+                (best.probability * 100).toFixed(1) +
+                "%</strong>";
+        }
+
+    } catch (error) {
+
+        console.error("Lỗi nhận diện:", error);
+
+    }
+
+    // Giảm tải CPU, nhận diện khoảng 5 lần/giây
+    if (running) {
+        timer = setTimeout(predictLoop, 200);
+    }
+}
+
+// 6. ĐỔI CAMERA TRƯỚC / SAU
+async function switchCamera() {
+
+    if (!running || loading) return;
+
+    loading = true;
+
+    const nextFacing =
+        currentFacing === "environment" ? "user" : "environment";
+
+    stopCamera();
+
+    currentFacing = nextFacing;
+
+    loading = false;
+
+    await startCamera();
+}
+
+// 7. TẮT CAMERA
+function stopCamera() {
+
+    running = false;
+
+    if (timer !== null) {
+        clearTimeout(timer);
+        timer = null;
+    }
+
+    if (stream) {
+
+        stream.getTracks().forEach(track => {
+            track.stop();
+        });
+
+        stream = null;
+    }
+
+    video.pause();
+    video.srcObject = null;
+
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+    switchBtn.disabled = true;
+
+    statusText.innerText = "Camera đã tắt.";
+}
+
+// 8. HIỂN THỊ TÊN CLASS AN TOÀN
+function escapeHTML(text) {
+
+    return String(text).replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[char]);
+
+}
+
+// 9. DỌN DẸP KHI RỜI TRANG
+window.addEventListener("pagehide", stopCamera);
+
+</script>
+
+</body>
+</html>
