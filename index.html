@@ -3,477 +3,582 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
 <title>AI phân loại rác</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
 <style>
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+  font-family: Arial, Helvetica, sans-serif !important;
+}
 
 body {
-    margin: 0;
-    padding: 15px;
-    font-family: Arial, sans-serif;
-    background: #f3f5f7;
-    color: #222;
+  margin: 0;
+  padding: 16px 10px;
+  background: #f3f5f7;
+  color: #222;
 }
 
-.container {
-    max-width: 550px;
-    margin: auto;
-    background: white;
-    padding: 18px;
-    border-radius: 15px;
-    text-align: center;
+#app {
+  width: 100%;
+  max-width: 560px;
+  margin: auto;
+  padding: 20px;
+  background: #fff;
+  border-radius: 16px;
 }
 
-h2 { margin-top: 5px; }
-
-.camera-box {
-    width: 100%;
-    aspect-ratio: 4 / 3;
-    background: #222;
-    border-radius: 12px;
-    overflow: hidden;
-    margin: 15px auto;
+h1 {
+  font-size: 24px;
+  text-align: center;
+  margin: 2px 0 12px;
+  font-weight: 700;
 }
 
-video {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
+.description {
+  font-size: 15px;
+  text-align: center;
+  line-height: 1.5;
+  margin-bottom: 18px;
 }
 
-.controls {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin: 15px 0;
+#camera {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: #222;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: none;
+}
+
+#preview {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: none;
+}
+
+#placeholder {
+  color: white;
+  font-size: 14px;
+  text-align: center;
+  padding: 15px;
+}
+
+.buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 button {
-    flex: 1;
-    min-width: 100px;
-    padding: 13px 8px;
-    border: none;
-    border-radius: 8px;
-    background: #1976d2;
-    color: white;
-    font-size: 14px;
-    cursor: pointer;
+  flex: 1;
+  min-width: 0;
+  padding: 13px 5px;
+  border: none;
+  border-radius: 8px;
+  background: #1976d2;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 button:disabled {
-    opacity: 0.45;
+  opacity: .45;
+  cursor: not-allowed;
 }
 
-.stop { background: #d32f2f; }
+#stop {
+  background: #d32f2f;
+}
+
+#choose {
+  width: 100%;
+  margin-top: 10px;
+}
+
+#photoInput {
+  display: none;
+}
 
 #status {
-    font-size: 14px;
-    color: #555;
-    margin: 12px 0;
-    line-height: 1.5;
-}
-
-.best {
-    padding: 16px;
-    border-radius: 10px;
-    background: #e8f5e9;
-    margin: 15px 0;
-    font-weight: bold;
-}
-
-.best small {
-    display: block;
-    font-weight: normal;
-    margin-bottom: 7px;
-}
-
-.best strong {
-    font-size: 21px;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #555;
+  margin: 15px 0;
 }
 
 .result {
-    text-align: left;
-    margin-top: 20px;
+  padding: 17px 10px;
+  background: #eaf5ec;
+  border-radius: 11px;
+  text-align: center;
+  margin: 12px 0 20px;
 }
 
-.item { margin: 14px 0; }
-
-.item-title {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 6px;
-    font-size: 14px;
+.result-title {
+  font-size: 13px;
+  margin-bottom: 8px;
 }
 
-.progress {
-    width: 100%;
-    height: 12px;
-    background: #e5e5e5;
-    border-radius: 20px;
-    overflow: hidden;
+#bestName {
+  font-size: 23px;
+  font-weight: 700;
+  color: #176b32;
+  overflow-wrap: anywhere;
+}
+
+#bestPercent {
+  font-size: 14px;
+  margin-top: 6px;
+  color: #444;
+}
+
+h2 {
+  font-size: 17px;
+  margin: 20px 0 15px;
+}
+
+.label-item {
+  margin-bottom: 16px;
+}
+
+.label-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 14px;
+  margin-bottom: 7px;
+}
+
+.label-name {
+  font-weight: 600;
+}
+
+.label-percent {
+  white-space: nowrap;
+}
+
+.track {
+  height: 12px;
+  background: #e6e6e6;
+  border-radius: 20px;
+  overflow: hidden;
 }
 
 .bar {
-    height: 100%;
-    width: 0;
-    background: #2196f3;
-    transition: width 0.2s;
+  height: 100%;
+  width: 0%;
+  background: #2196f3;
+  border-radius: 20px;
+  transition: width .2s;
 }
 
 .note {
-    font-size: 12px;
-    color: #777;
-    margin-top: 20px;
+  border-top: 1px solid #eee;
+  padding-top: 13px;
+  margin-top: 20px;
+  font-size: 12px;
+  color: #777;
+  text-align: center;
+  line-height: 1.6;
 }
 
-@media (max-width: 480px) {
-    body { padding: 8px; }
-    .container { padding: 12px; }
-    button { font-size: 13px; }
+@media (max-width: 400px) {
+  #app {
+    padding: 13px;
+  }
+
+  h1 {
+    font-size: 21px;
+  }
+
+  button {
+    font-size: 12px;
+  }
 }
 </style>
 </head>
 
 <body>
 
-<div class="container">
+<div id="app">
 
-    <h2>AI PHÂN LOẠI RÁC</h2>
+  <h1>AI PHÂN LOẠI RÁC</h1>
 
-    <p>Đưa vật thể vào camera để AI nhận diện.</p>
+  <div class="description">
+    Đưa vật thể vào camera để AI nhận diện loại rác.
+  </div>
 
-    <div class="camera-box">
-        <video id="video" autoplay muted playsinline></video>
-    </div>
+  <div id="camera">
+    <video id="video" autoplay muted playsinline></video>
+    <img id="preview" alt="Ảnh cần phân loại">
+    <div id="placeholder">Camera chưa được bật</div>
+  </div>
 
-    <div class="controls">
-        <button id="startBtn" onclick="startCamera()">
-            Bật camera
-        </button>
+  <div class="buttons">
+    <button id="start">Bật camera</button>
+    <button id="switch" disabled>Đổi camera</button>
+    <button id="stop" disabled>Tắt camera</button>
+  </div>
 
-        <button id="switchBtn" onclick="switchCamera()" disabled>
-            Đổi camera
-        </button>
+  <button id="choose">Chụp / chọn ảnh</button>
+  <input id="photoInput" type="file" accept="image/*" capture="environment">
 
-        <button id="stopBtn" class="stop"
-                onclick="stopCamera()" disabled>
-            Tắt camera
-        </button>
-    </div>
+  <div id="status">Nhấn Bật camera để bắt đầu.</div>
 
-    <div id="status">
-        Nhấn Bật camera để bắt đầu.
-    </div>
+  <div class="result">
+    <div class="result-title">KẾT QUẢ NHẬN DIỆN</div>
+    <div id="bestName">Chưa có kết quả</div>
+    <div id="bestPercent"></div>
+  </div>
 
-    <div class="best" id="bestResult">
-        <small>KẾT QUẢ NHẬN DIỆN</small>
-        <strong>Chưa có kết quả</strong>
-    </div>
+  <h2>CHI TIẾT KẾT QUẢ</h2>
 
-    <div class="result" id="label-container"></div>
+  <div id="labels"></div>
 
-    <div class="note">
-        Kết quả AI chỉ mang tính tham khảo.
-        Hãy kiểm tra vật thể trước khi phân loại thực tế.
-    </div>
+  <div class="note">
+    Kết quả AI chỉ mang tính tham khảo.
+    Hãy kiểm tra vật thể trước khi phân loại rác thực tế.
+  </div>
 
 </div>
 
 <script>
+(function () {
 
-// 1. ĐƯỜNG DẪN MÔ HÌNH
-const URL = "https://teachablemachine.withgoogle.com/models/AKXp-jRAe/";
+  const MODEL_URL =
+    "https://teachablemachine.withgoogle.com/models/AKXp-jRAe/";
 
-let model = null;
-let stream = null;
-let running = false;
-let loading = false;
-let currentFacing = "environment";
-let timer = null;
+  const video = document.getElementById("video");
+  const preview = document.getElementById("preview");
+  const placeholder = document.getElementById("placeholder");
 
-const video = document.getElementById("video");
-const statusText = document.getElementById("status");
-const startBtn = document.getElementById("startBtn");
-const stopBtn = document.getElementById("stopBtn");
-const switchBtn = document.getElementById("switchBtn");
-const labelContainer = document.getElementById("label-container");
-const bestResult = document.getElementById("bestResult");
+  const startBtn = document.getElementById("start");
+  const switchBtn = document.getElementById("switch");
+  const stopBtn = document.getElementById("stop");
+  const chooseBtn = document.getElementById("choose");
+  const photoInput = document.getElementById("photoInput");
 
-// 2. TẢI MÔ HÌNH
-async function loadModel() {
+  const status = document.getElementById("status");
+  const labels = document.getElementById("labels");
 
+  const bestName = document.getElementById("bestName");
+  const bestPercent = document.getElementById("bestPercent");
+
+  // Canvas giống cách xử lý của Teachable Machine gốc
+  const canvas = document.createElement("canvas");
+  canvas.width = 200;
+  canvas.height = 200;
+
+  const ctx = canvas.getContext("2d");
+
+  let model = null;
+  let stream = null;
+  let running = false;
+  let busy = false;
+  let facing = "environment";
+  let animationId = null;
+  let photoURL = null;
+
+  async function loadModel() {
     if (model) return;
 
-    statusText.innerText = "Đang tải mô hình AI...";
+    status.textContent = "Đang tải mô hình AI...";
 
-    const modelURL = URL + "model.json";
-    const metadataURL = URL + "metadata.json";
+    model = await tmImage.load(
+      MODEL_URL + "model.json",
+      MODEL_URL + "metadata.json"
+    );
 
-    model = await tmImage.load(modelURL, metadataURL);
+    labels.replaceChildren();
 
-    createLabels();
-}
+    for (let i = 0; i < model.getTotalClasses(); i++) {
 
-// 3. TẠO DANH SÁCH KẾT QUẢ
-function createLabels() {
+      const item = document.createElement("div");
+      item.className = "label-item";
 
-    labelContainer.innerHTML = "";
+      const heading = document.createElement("div");
+      heading.className = "label-heading";
 
-    const total = model.getTotalClasses();
+      const name = document.createElement("span");
+      name.className = "label-name";
 
-    for (let i = 0; i < total; i++) {
+      const percent = document.createElement("span");
+      percent.className = "label-percent";
 
-        const item = document.createElement("div");
-        item.className = "item";
+      heading.append(name, percent);
 
-        const title = document.createElement("div");
-        title.className = "item-title";
+      const track = document.createElement("div");
+      track.className = "track";
 
-        const name = document.createElement("span");
-        const percent = document.createElement("span");
+      const bar = document.createElement("div");
+      bar.className = "bar";
 
-        const progress = document.createElement("div");
-        progress.className = "progress";
+      track.appendChild(bar);
+      item.append(heading, track);
 
-        const bar = document.createElement("div");
-        bar.className = "bar";
-
-        progress.appendChild(bar);
-        title.appendChild(name);
-        title.appendChild(percent);
-
-        item.appendChild(title);
-        item.appendChild(progress);
-
-        labelContainer.appendChild(item);
+      labels.appendChild(item);
     }
-}
+  }
 
-// 4. MỞ CAMERA
-async function startCamera() {
+  // Chuyển ảnh về canvas 200x200
+  // Giữ cách xử lý gần với webcam.canvas của code gốc
+  function drawToCanvas(source, flip) {
 
-    if (running || loading) return;
+    ctx.save();
+    ctx.clearRect(0, 0, 200, 200);
 
-    loading = true;
+    if (flip) {
+      ctx.translate(200, 0);
+      ctx.scale(-1, 1);
+    }
+
+    ctx.drawImage(source, 0, 0, 200, 200);
+    ctx.restore();
+  }
+
+  async function predict(source, flip = false) {
+
+    if (!model || busy) return;
+
+    busy = true;
+
+    try {
+
+      drawToCanvas(source, flip);
+
+      // Giữ nguyên cách dự đoán của code gốc
+      const prediction = await model.predict(canvas);
+
+      let best = prediction[0];
+
+      prediction.forEach((p, i) => {
+
+        if (p.probability > best.probability) {
+          best = p;
+        }
+
+        const item = labels.children[i];
+
+        item.querySelector(".label-name").textContent =
+          p.className;
+
+        item.querySelector(".label-percent").textContent =
+          (p.probability * 100).toFixed(1) + "%";
+
+        item.querySelector(".bar").style.width =
+          (p.probability * 100) + "%";
+      });
+
+      bestName.textContent = best.className;
+
+      bestPercent.textContent =
+        "Độ tin cậy dự đoán: " +
+        (best.probability * 100).toFixed(1) + "%";
+
+    } catch (error) {
+      console.error(error);
+      status.textContent = "Không thể nhận diện hình ảnh.";
+    }
+
+    busy = false;
+  }
+
+  async function startCamera() {
+
+    if (running) return;
+
     startBtn.disabled = true;
 
     try {
 
-        if (!window.isSecureContext ||
-            !navigator.mediaDevices ||
-            !navigator.mediaDevices.getUserMedia) {
+      await loadModel();
 
-            throw new Error("HTTPS_REQUIRED");
+      if (!navigator.mediaDevices ||
+          !navigator.mediaDevices.getUserMedia) {
+        throw new Error("CAMERA_UNAVAILABLE");
+      }
+
+      status.textContent = "Đang mở camera...";
+
+      stream = await navigator.mediaDevices.getUserMedia({
+
+        audio: false,
+
+        video: {
+          facingMode: { ideal: facing },
+          width: { ideal: 640 },
+          height: { ideal: 480 }
         }
 
-        await loadModel();
+      });
 
-        statusText.innerText = "Đang mở camera...";
+      video.srcObject = stream;
+      await video.play();
 
-        stream = await navigator.mediaDevices.getUserMedia({
+      video.style.display = "block";
+      preview.style.display = "none";
+      placeholder.style.display = "none";
 
-            audio: false,
+      running = true;
 
-            video: {
-                facingMode: {
-                    ideal: currentFacing
-                },
+      startBtn.disabled = true;
+      switchBtn.disabled = false;
+      stopBtn.disabled = false;
 
-                width: {
-                    ideal: 640
-                },
+      status.textContent =
+        "Camera đang hoạt động. Hãy đưa vật thể vào khung hình.";
 
-                height: {
-                    ideal: 480
-                },
-
-                frameRate: {
-                    ideal: 15,
-                    max: 20
-                }
-            }
-
-        });
-
-        video.srcObject = stream;
-
-        await new Promise(resolve => {
-            video.onloadedmetadata = resolve;
-        });
-
-        await video.play();
-
-        running = true;
-
-        startBtn.disabled = true;
-        stopBtn.disabled = false;
-        switchBtn.disabled = false;
-
-        statusText.innerText =
-            "Camera đang hoạt động. Hãy đưa rác vào khung hình.";
-
-        predictLoop();
+      loop();
 
     } catch (error) {
 
-        console.error(error);
+      console.error(error);
 
-        let message = "Không thể mở camera.";
+      stopCamera();
 
-        if (error.message === "HTTPS_REQUIRED") {
-            message = "Ứng dụng cần chạy trên HTTPS.";
-        }
-        else if (error.name === "NotAllowedError") {
-            message = "Bạn chưa cấp quyền sử dụng camera.";
-        }
-        else if (error.name === "NotFoundError") {
-            message = "Không tìm thấy camera trên thiết bị.";
-        }
-        else if (error.name === "NotReadableError") {
-            message = "Camera đang được ứng dụng khác sử dụng.";
-        }
-        else if (error.name === "OverconstrainedError") {
-            message = "Camera không hỗ trợ cấu hình yêu cầu.";
-        }
-
-        statusText.innerText = message;
-
-        stopCamera();
-
-    } finally {
-
-        loading = false;
-
+      if (error.message === "CAMERA_UNAVAILABLE") {
+        status.textContent =
+          "Trình duyệt không hỗ trợ truy cập camera. Hãy chọn ảnh.";
+      } else if (error.name === "NotAllowedError") {
+        status.textContent =
+          "Camera bị từ chối quyền truy cập. Hãy kiểm tra quyền camera.";
+      } else if (error.name === "NotFoundError") {
+        status.textContent = "Không tìm thấy camera.";
+      } else {
+        status.textContent =
+          "Không thể mở camera. Hãy thử chọn ảnh.";
+      }
     }
-}
+  }
 
-// 5. NHẬN DIỆN VẬT THỂ
-async function predictLoop() {
+  async function loop() {
 
     if (!running) return;
 
-    try {
-
-        if (video.readyState >= 2) {
-
-            // Giữ nguyên thứ tự các Class của mô hình
-            const predictions = await model.predict(video);
-
-            if (!running) return;
-
-            let best = predictions[0];
-
-            predictions.forEach((p, index) => {
-
-                if (p.probability > best.probability) {
-                    best = p;
-                }
-
-                const item = labelContainer.children[index];
-
-                item.querySelector(
-                    ".item-title span:first-child"
-                ).innerText = p.className;
-
-                item.querySelector(
-                    ".item-title span:last-child"
-                ).innerText =
-                    (p.probability * 100).toFixed(1) + "%";
-
-                item.querySelector(".bar").style.width =
-                    (p.probability * 100) + "%";
-
-            });
-
-            bestResult.innerHTML =
-                "<small>KẾT QUẢ NHẬN DIỆN</small>" +
-                "<strong>" + escapeHTML(best.className) +
-                " - " +
-                (best.probability * 100).toFixed(1) +
-                "%</strong>";
-        }
-
-    } catch (error) {
-
-        console.error("Lỗi nhận diện:", error);
-
+    if (!busy && video.readyState >= 2) {
+      await predict(video, true);
     }
 
-    // Giảm tải CPU, nhận diện khoảng 5 lần/giây
     if (running) {
-        timer = setTimeout(predictLoop, 200);
+      animationId = requestAnimationFrame(loop);
     }
-}
+  }
 
-// 6. ĐỔI CAMERA TRƯỚC / SAU
-async function switchCamera() {
-
-    if (!running || loading) return;
-
-    loading = true;
-
-    const nextFacing =
-        currentFacing === "environment" ? "user" : "environment";
-
-    stopCamera();
-
-    currentFacing = nextFacing;
-
-    loading = false;
-
-    await startCamera();
-}
-
-// 7. TẮT CAMERA
-function stopCamera() {
+  function stopCamera() {
 
     running = false;
 
-    if (timer !== null) {
-        clearTimeout(timer);
-        timer = null;
+    if (animationId !== null) {
+      cancelAnimationFrame(animationId);
+      animationId = null;
     }
 
     if (stream) {
-
-        stream.getTracks().forEach(track => {
-            track.stop();
-        });
-
-        stream = null;
+      stream.getTracks().forEach(track => track.stop());
+      stream = null;
     }
 
     video.pause();
     video.srcObject = null;
+    video.style.display = "none";
 
     startBtn.disabled = false;
-    stopBtn.disabled = true;
     switchBtn.disabled = true;
+    stopBtn.disabled = true;
 
-    statusText.innerText = "Camera đã tắt.";
-}
+    placeholder.style.display = "block";
+    placeholder.textContent = "Camera chưa được bật";
+  }
 
-// 8. HIỂN THỊ TÊN CLASS AN TOÀN
-function escapeHTML(text) {
+  async function switchCamera() {
 
-    return String(text).replace(/[&<>"']/g, char => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;"
-    })[char]);
+    if (!running) return;
 
-}
+    facing = facing === "environment" ? "user" : "environment";
 
-// 9. DỌN DẸP KHI RỜI TRANG
-window.addEventListener("pagehide", stopCamera);
+    stopCamera();
 
+    await startCamera();
+  }
+
+  async function choosePhoto() {
+
+    try {
+      await loadModel();
+      photoInput.click();
+    } catch (error) {
+      status.textContent = "Không tải được mô hình AI.";
+    }
+  }
+
+  photoInput.addEventListener("change", async function () {
+
+    const file = this.files[0];
+
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      status.textContent = "Vui lòng chọn ảnh hợp lệ.";
+      return;
+    }
+
+    stopCamera();
+
+    if (photoURL) {
+      URL.revokeObjectURL(photoURL);
+    }
+
+    photoURL = URL.createObjectURL(file);
+
+    preview.onload = async function () {
+
+      preview.style.display = "block";
+      video.style.display = "none";
+      placeholder.style.display = "none";
+
+      status.textContent = "Đang phân tích ảnh...";
+
+      await predict(preview, false);
+
+      status.textContent =
+        "Đã hoàn thành nhận diện hình ảnh.";
+    };
+
+    preview.onerror = function () {
+      status.textContent = "Không thể đọc ảnh.";
+    };
+
+    preview.src = photoURL;
+
+    this.value = "";
+  });
+
+  startBtn.addEventListener("click", startCamera);
+  switchBtn.addEventListener("click", switchCamera);
+  stopBtn.addEventListener("click", stopCamera);
+  chooseBtn.addEventListener("click", choosePhoto);
+
+  window.addEventListener("pagehide", stopCamera);
+
+})();
 </script>
 
 </body>
