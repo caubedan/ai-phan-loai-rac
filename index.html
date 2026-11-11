@@ -3,714 +3,629 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1677d2">
 <title>AI phân loại rác</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
 <style>
-#trash-ai, #trash-ai * {
-  box-sizing: border-box;
-  font-family: Arial, Helvetica, sans-serif !important;
+* {
+    box-sizing: border-box;
 }
 
-#trash-ai {
-  width: 100%;
-  max-width: 650px;
-  margin: 0 auto;
-  padding: 20px;
-  background: #ffffff;
-  color: #263238;
-  border-radius: 18px;
-  box-shadow: 0 4px 20px rgba(0,0,0,.07);
+body {
+    margin: 0;
+    padding: 20px 12px;
+    font-family: Arial, Helvetica, sans-serif;
+    color: #263445;
+    background: #f1f5f9;
 }
 
-#trash-ai .header {
-  text-align: center;
-  margin-bottom: 20px;
+.container {
+    width: 100%;
+    max-width: 560px;
+    margin: auto;
+    padding: 20px;
+    background: #ffffff;
+    border-radius: 18px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.06);
 }
 
-#trash-ai .logo {
-  font-size: 38px;
-  margin-bottom: 8px;
+h1 {
+    margin: 3px 0 10px;
+    text-align: center;
+    font-size: 25px;
+    color: #1769aa;
 }
 
-#trash-ai h1 {
-  color: #176b48;
-  font-size: 26px;
-  margin: 0 0 9px;
-  line-height: 1.3;
+.subtitle {
+    text-align: center;
+    font-size: 15px;
+    line-height: 1.5;
+    margin-bottom: 20px;
+    color: #596579;
 }
 
-#trash-ai .subtitle {
-  font-size: 14px;
-  line-height: 1.6;
-  color: #68777d;
-  margin: 0;
-}
-
-#trash-ai .camera-frame {
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  background: #17252a;
-  border-radius: 14px;
-  overflow: hidden;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-#trash-ai #camera-video,
-#trash-ai #preview-image {
-  display: none;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
-#trash-ai .camera-placeholder {
-  color: white;
-  text-align: center;
-  padding: 20px;
-  line-height: 1.7;
-  font-size: 14px;
-}
-
-#trash-ai .camera-placeholder .camera-icon {
-  display: block;
-  font-size: 46px;
-  margin-bottom: 10px;
-}
-
-#trash-ai .controls {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 9px;
-  margin-top: 14px;
-}
-
-#trash-ai button {
-  border: none;
-  border-radius: 9px;
-  padding: 13px 5px;
-  background: #1976d2;
-  color: white;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  min-width: 0;
-}
-
-#trash-ai button:disabled {
-  opacity: .45;
-  cursor: not-allowed;
-}
-
-#trash-ai #switch-camera {
-  background: #607d8b;
-}
-
-#trash-ai #stop-camera {
-  background: #d64545;
-}
-
-#trash-ai #upload-button {
-  width: 100%;
-  margin-top: 10px;
-  background: #176b48;
-  font-size: 14px;
-}
-
-#trash-ai #file-input {
-  display: none;
-}
-
-#trash-ai .status {
-  background: #f1f5f3;
-  border-radius: 9px;
-  padding: 12px;
-  margin-top: 13px;
-  text-align: center;
-  font-size: 13px;
-  line-height: 1.6;
-  color: #586963;
-}
-
-#trash-ai .status.success {
-  background: #e9f6ed;
-  color: #267344;
-}
-
-#trash-ai .status.error {
-  background: #fff0f0;
-  color: #b42318;
-}
-
-#trash-ai .result {
-  background: #eaf6ed;
-  border-radius: 13px;
-  text-align: center;
-  padding: 19px 12px;
-  margin-top: 16px;
-}
-
-#trash-ai .result-title {
-  font-size: 12px;
-  color: #50705a;
-  font-weight: 600;
-  letter-spacing: .5px;
-  margin-bottom: 10px;
-}
-
-#trash-ai #best-name {
-  font-size: 25px;
-  font-weight: 700;
-  line-height: 1.4;
-  color: #176b48;
-  overflow-wrap: anywhere;
-}
-
-#trash-ai #best-percent {
-  color: #526b59;
-  font-size: 14px;
-  margin-top: 5px;
-}
-
-#trash-ai .section-title {
-  font-size: 17px;
-  font-weight: 700;
-  margin: 23px 0 15px;
-  color: #344a3b;
-}
-
-#trash-ai .prediction-item {
-  margin-bottom: 17px;
-}
-
-#trash-ai .prediction-heading {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  font-size: 14px;
-  margin-bottom: 7px;
-  line-height: 1.5;
-}
-
-#trash-ai .prediction-name {
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-
-#trash-ai .prediction-percent {
-  white-space: nowrap;
-  color: #586963;
-}
-
-#trash-ai .progress-track {
-  height: 11px;
-  width: 100%;
-  background: #e5e9e7;
-  border-radius: 20px;
-  overflow: hidden;
-}
-
-#trash-ai .progress-bar {
-  width: 0;
-  height: 100%;
-  background: #2196d2;
-  border-radius: 20px;
-  transition: width .25s ease;
-}
-
-#trash-ai .note {
-  margin-top: 20px;
-  padding-top: 13px;
-  border-top: 1px solid #eeeeee;
-  text-align: center;
-  font-size: 12px;
-  line-height: 1.7;
-  color: #87918b;
-}
-
-@media(max-width: 420px) {
-  #trash-ai {
-    padding: 13px;
+.camera-box {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background: #20252c;
     border-radius: 12px;
-  }
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
 
-  #trash-ai h1 {
-    font-size: 22px;
-  }
+#video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+}
 
-  #trash-ai .controls {
-    gap: 6px;
-  }
+.placeholder {
+    color: white;
+    text-align: center;
+    padding: 20px;
+    line-height: 1.7;
+    font-size: 14px;
+}
 
-  #trash-ai button {
+.controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+button {
+    border: none;
+    border-radius: 9px;
+    padding: 13px 5px;
+    font-size: 14px;
+    font-family: Arial, Helvetica, sans-serif;
+    cursor: pointer;
+    color: white;
+    font-weight: bold;
+    min-height: 46px;
+}
+
+button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.start {
+    background: #1677d2;
+}
+
+.switch {
+    background: #4096d9;
+}
+
+.stop {
+    background: #dc4444;
+}
+
+.upload {
+    width: 100%;
+    margin-top: 10px;
+    background: #16845d;
+}
+
+.status {
+    text-align: center;
+    font-size: 14px;
+    line-height: 1.5;
+    padding: 12px 5px;
+    color: #526174;
+    overflow-wrap: anywhere;
+}
+
+.status.error {
+    color: #c62828;
+    background: #fff0f0;
+    border-radius: 9px;
+}
+
+.status.success {
+    color: #18794e;
+}
+
+.result {
+    margin-top: 8px;
+    padding: 17px 12px;
+    background: #e9f6ed;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.result-title {
+    font-size: 14px;
+    color: #526174;
+    margin-bottom: 9px;
+}
+
+#top-result {
+    font-size: 23px;
+    font-weight: bold;
+    color: #176b43;
+    overflow-wrap: anywhere;
+}
+
+#top-percent {
+    font-size: 17px;
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+.list-title {
+    font-size: 15px;
+    font-weight: bold;
+    margin: 22px 0 12px;
+}
+
+.prediction {
+    margin-bottom: 15px;
+}
+
+.prediction-info {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 14px;
+    margin-bottom: 6px;
+}
+
+.prediction-info span:first-child {
+    overflow-wrap: anywhere;
+}
+
+.progress {
+    width: 100%;
+    height: 10px;
+    background: #e5e7eb;
+    border-radius: 20px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    width: 0%;
+    background: #1688df;
+    border-radius: 20px;
+    transition: width 0.2s;
+}
+
+.note {
+    margin-top: 22px;
+    padding-top: 12px;
+    border-top: 1px solid #e5e7eb;
+    color: #758195;
     font-size: 12px;
-    padding: 12px 3px;
-  }
+    line-height: 1.6;
+    text-align: center;
+}
 
-  #trash-ai #best-name {
-    font-size: 22px;
-  }
+input[type="file"] {
+    display: none;
+}
+
+@media (max-width: 380px) {
+    .container {
+        padding: 14px;
+    }
+
+    h1 {
+        font-size: 22px;
+    }
+
+    button {
+        font-size: 12px;
+    }
 }
 </style>
 </head>
 
 <body>
 
-<div id="trash-ai">
+<div class="container">
 
-  <div class="header">
-    <div class="logo">♻️</div>
     <h1>AI PHÂN LOẠI RÁC</h1>
-    <p class="subtitle">
-      Đưa vật thể vào camera để trí tuệ nhân tạo nhận diện
-      và hỗ trợ phân loại rác.
-    </p>
-  </div>
 
-  <div class="camera-frame">
-
-    <video id="camera-video"
-      autoplay
-      muted
-      playsinline>
-    </video>
-
-    <img id="preview-image" alt="Ảnh vật thể cần phân loại">
-
-    <div class="camera-placeholder" id="placeholder">
-      <span class="camera-icon">📷</span>
-      Camera chưa được bật
-      <br>
-      Nhấn nút bên dưới để bắt đầu nhận diện
+    <div class="subtitle">
+        Đưa vật thể vào camera để AI nhận diện và hỗ trợ phân loại rác.
     </div>
 
-  </div>
-
-  <div class="controls">
-
-    <button id="start-camera">
-      Bật camera
-    </button>
-
-    <button id="switch-camera" disabled>
-      Đổi camera
-    </button>
-
-    <button id="stop-camera" disabled>
-      Tắt camera
-    </button>
-
-  </div>
-
-  <button id="upload-button">
-    📁 Chụp / chọn ảnh để nhận diện
-  </button>
-
-  <input
-    type="file"
-    id="file-input"
-    accept="image/*"
-    capture="environment"
-  >
-
-  <div class="status" id="status">
-    Hệ thống sẵn sàng. Nhấn Bật camera để bắt đầu.
-  </div>
-
-  <div class="result">
-
-    <div class="result-title">
-      KẾT QUẢ NHẬN DIỆN
+    <div class="camera-box">
+        <video id="video" autoplay muted playsinline></video>
+        <div class="placeholder" id="placeholder">
+            CAMERA AI<br>
+            Nhấn "Bật camera" để bắt đầu nhận diện
+        </div>
     </div>
 
-    <div id="best-name">
-      Chưa có kết quả
+    <div class="controls">
+        <button class="start" id="startBtn" onclick="startCamera()">
+            Bật camera
+        </button>
+
+        <button class="switch" id="switchBtn" onclick="switchCamera()" disabled>
+            Đổi camera
+        </button>
+
+        <button class="stop" id="stopBtn" onclick="stopCamera()" disabled>
+            Tắt camera
+        </button>
     </div>
 
-    <div id="best-percent"></div>
+    <button class="upload" id="uploadBtn" onclick="document.getElementById('fileInput').click()">
+        Chụp / Chọn ảnh để nhận diện
+    </button>
 
-  </div>
+    <input type="file" id="fileInput" accept="image/*" capture="environment">
 
-  <div class="section-title">
-    Chi tiết kết quả phân loại
-  </div>
+    <div class="status" id="status">
+        Đang chờ khởi động mô hình AI...
+    </div>
 
-  <div id="prediction-list"></div>
+    <div class="result">
+        <div class="result-title">KẾT QUẢ NHẬN DIỆN</div>
+        <div id="top-result">Chưa có kết quả</div>
+        <div id="top-percent"></div>
+    </div>
 
-  <div class="note">
-    Sản phẩm học tập ứng dụng trí tuệ nhân tạo.
-    <br>
-    Kết quả nhận diện mang tính tham khảo.
-    Hãy kiểm tra vật thể trước khi phân loại thực tế.
-  </div>
+    <div class="list-title">CHI TIẾT KẾT QUẢ</div>
+
+    <div id="label-container">
+        <div style="text-align:center;color:#8993a1;font-size:13px">
+            Kết quả sẽ hiển thị tại đây.
+        </div>
+    </div>
+
+    <div class="note">
+        Sản phẩm được xây dựng bằng Teachable Machine và trí tuệ nhân tạo.
+        <br>
+        Kết quả AI chỉ mang tính tham khảo. Hãy kiểm tra vật thể trước khi phân loại thực tế.
+    </div>
 
 </div>
 
 <script>
-(function () {
+const MODEL_URL =
+    "https://teachablemachine.withgoogle.com/models/J7DmgPiCt/";
 
-  // ĐƯỜNG DẪN MÔ HÌNH TRÊN GITHUB PAGES
-  const MODEL_URL =
-    "https://caubedan.github.io/ai-phan-loai-rac/my_model/";
+let model = null;
+let stream = null;
+let running = false;
+let facingMode = "environment";
+let animationId = null;
+let lastPredictTime = 0;
+let predicting = false;
 
-  const app = document.getElementById("trash-ai");
+const video = document.getElementById("video");
+const statusBox = document.getElementById("status");
+const placeholder = document.getElementById("placeholder");
 
-  const video = app.querySelector("#camera-video");
-  const preview = app.querySelector("#preview-image");
-  const placeholder = app.querySelector("#placeholder");
+const startBtn = document.getElementById("startBtn");
+const switchBtn = document.getElementById("switchBtn");
+const stopBtn = document.getElementById("stopBtn");
 
-  const startBtn = app.querySelector("#start-camera");
-  const switchBtn = app.querySelector("#switch-camera");
-  const stopBtn = app.querySelector("#stop-camera");
-  const uploadBtn = app.querySelector("#upload-button");
-  const fileInput = app.querySelector("#file-input");
-
-  const statusBox = app.querySelector("#status");
-  const bestName = app.querySelector("#best-name");
-  const bestPercent = app.querySelector("#best-percent");
-  const predictionList = app.querySelector("#prediction-list");
-
-  let model = null;
-  let stream = null;
-  let facingMode = "environment";
-  let running = false;
-  let busy = false;
-  let timer = null;
-  let currentImageURL = null;
-  let maxPredictions = 0;
-
-  function setStatus(message, type = "") {
+// Hiển thị trạng thái
+function setStatus(message, type = "") {
     statusBox.textContent = message;
-    statusBox.className = "status" + (type ? " " + type : "");
-  }
+    statusBox.className = "status " + type;
+}
 
-  // Tải mô hình AI
-  async function loadModel() {
-
+// Tải mô hình AI
+async function loadModel() {
     if (model) return;
 
     setStatus("Đang tải mô hình AI...");
 
-    const modelURL = MODEL_URL + "model.json";
-    const metadataURL = MODEL_URL + "metadata.json";
+    try {
+        model = await tmImage.load(
+            MODEL_URL + "model.json",
+            MODEL_URL + "metadata.json"
+        );
 
-    model = await tmImage.load(modelURL, metadataURL);
+        setStatus("Mô hình AI đã sẵn sàng. Bạn có thể bắt đầu.", "success");
 
-    maxPredictions = model.getTotalClasses();
-
-    predictionList.replaceChildren();
-
-    for (let i = 0; i < maxPredictions; i++) {
-
-      const item = document.createElement("div");
-      item.className = "prediction-item";
-
-      const heading = document.createElement("div");
-      heading.className = "prediction-heading";
-
-      const name = document.createElement("span");
-      name.className = "prediction-name";
-
-      const percent = document.createElement("span");
-      percent.className = "prediction-percent";
-
-      heading.append(name, percent);
-
-      const track = document.createElement("div");
-      track.className = "progress-track";
-
-      const bar = document.createElement("div");
-      bar.className = "progress-bar";
-
-      track.appendChild(bar);
-      item.append(heading, track);
-
-      predictionList.appendChild(item);
+    } catch (error) {
+        console.error(error);
+        throw new Error(
+            "Không tải được mô hình AI. Hãy kiểm tra model.json, metadata.json và kết nối Internet."
+        );
     }
-  }
+}
 
-  // Bật camera
-  async function startCamera() {
+// Bật camera
+async function startCamera() {
+    startBtn.disabled = true;
+
+    try {
+        await loadModel();
+
+        if (!navigator.mediaDevices ||
+            !navigator.mediaDevices.getUserMedia) {
+
+            throw new Error(
+                "Trình duyệt không hỗ trợ camera hoặc trang chưa sử dụng HTTPS."
+            );
+        }
+
+        setStatus("Đang yêu cầu quyền truy cập camera...");
+
+        await openCamera(facingMode);
+
+    } catch (error) {
+        console.error("Lỗi camera:", error);
+
+        stopStream();
+
+        startBtn.disabled = false;
+        switchBtn.disabled = true;
+        stopBtn.disabled = true;
+
+        let message = error.message || "Không thể bật camera.";
+
+        if (error.name === "NotAllowedError") {
+            message =
+                "Không được cấp quyền camera. Hãy kiểm tra quyền camera của trình duyệt và Google Sites.";
+        } else if (error.name === "NotFoundError") {
+            message = "Không tìm thấy camera trên thiết bị.";
+        } else if (error.name === "NotReadableError") {
+            message = "Camera đang được ứng dụng khác sử dụng.";
+        } else if (error.name === "OverconstrainedError") {
+            message = "Camera không đáp ứng cấu hình yêu cầu.";
+        }
+
+        setStatus(message, "error");
+    }
+}
+
+// Mở camera theo chế độ trước hoặc sau
+async function openCamera(mode) {
 
     stopStream();
 
-    try {
-
-      await loadModel();
-
-      setStatus("Đang kết nối camera...");
-
-      // Ưu tiên camera sau trên điện thoại
-      const constraints = {
+    const constraints = {
         audio: false,
         video: {
-          facingMode: { ideal: facingMode },
-          width: { ideal: 640 },
-          height: { ideal: 480 }
+            facingMode: { ideal: mode },
+            width: { ideal: 640 },
+            height: { ideal: 480 }
         }
-      };
+    };
 
-      try {
-        stream = await navigator.mediaDevices.getUserMedia(
-          constraints
-        );
-      } catch (firstError) {
+    try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+    } catch (error) {
+        // Thử lại với cấu hình camera mặc định
+        if (error.name === "OverconstrainedError") {
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: true,
+                audio: false
+            });
+        } else {
+            throw error;
+        }
+    }
 
-        // Thử lại với thiết lập camera cơ bản
-        stream = await navigator.mediaDevices.getUserMedia({
-          audio: false,
-          video: true
-        });
-      }
+    video.srcObject = stream;
 
-      video.srcObject = stream;
+    await new Promise((resolve, reject) => {
+        video.onloadedmetadata = resolve;
+        video.onerror = reject;
+    });
 
-      await video.play();
+    await video.play();
 
-      video.style.display = "block";
-      preview.style.display = "none";
-      placeholder.style.display = "none";
+    video.style.display = "block";
+    placeholder.style.display = "none";
 
-      running = true;
+    running = true;
+    predicting = false;
+    lastPredictTime = 0;
 
-      startBtn.disabled = true;
-      switchBtn.disabled = false;
-      stopBtn.disabled = false;
+    startBtn.disabled = true;
+    switchBtn.disabled = false;
+    stopBtn.disabled = false;
 
-      setStatus(
-        "Camera đang hoạt động. Hãy đưa vật thể vào giữa khung hình.",
-        "success"
-      );
+    setStatus("Camera đang hoạt động. Hãy đưa vật thể vào khung hình.", "success");
 
-      predictCamera();
+    cancelAnimationFrame(animationId);
+    animationId = requestAnimationFrame(loop);
+}
+
+// Đổi camera trước / sau
+async function switchCamera() {
+    facingMode =
+        facingMode === "environment" ? "user" : "environment";
+
+    try {
+        setStatus("Đang chuyển camera...");
+
+        await openCamera(facingMode);
 
     } catch (error) {
-
-      console.error(error);
-
-      running = false;
-      stopStream();
-
-      startBtn.disabled = false;
-      switchBtn.disabled = true;
-      stopBtn.disabled = true;
-
-      if (error.name === "NotAllowedError") {
-        setStatus(
-          "Camera bị từ chối quyền truy cập. Hãy cấp quyền camera cho trình duyệt.",
-          "error"
-        );
-      } else if (error.name === "NotFoundError") {
-        setStatus("Không tìm thấy camera trên thiết bị.", "error");
-      } else if (error.name === "NotReadableError") {
-        setStatus("Camera đang được ứng dụng khác sử dụng.", "error");
-      } else {
-        setStatus(
-          "Không thể bật camera. Hãy kiểm tra kết nối và quyền truy cập.",
-          "error"
-        );
-      }
+        console.error(error);
+        setStatus("Không thể đổi camera. Hãy thử lại.", "error");
     }
-  }
+}
 
-  // Dừng luồng camera
-  function stopStream() {
-
+// Tắt camera
+function stopStream() {
     if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      stream = null;
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
     }
 
     video.srcObject = null;
+}
+
+function stopCamera() {
     running = false;
 
-    if (timer !== null) {
-      clearTimeout(timer);
-      timer = null;
-    }
-  }
-
-  // Dự đoán từ camera
-  async function predictCamera() {
-
-    if (!running || busy) return;
-
-    if (video.readyState >= 2) {
-
-      busy = true;
-
-      try {
-        const prediction = await model.predict(video);
-        showPrediction(prediction);
-      } catch (error) {
-        console.error(error);
-        setStatus("Lỗi khi phân tích hình ảnh.", "error");
-      }
-
-      busy = false;
-    }
-
-    if (running) {
-      timer = setTimeout(predictCamera, 250);
-    }
-  }
-
-  // Hiển thị kết quả
-  function showPrediction(prediction) {
-
-    const sorted = [...prediction].sort(
-      (a, b) => b.probability - a.probability
-    );
-
-    const best = sorted[0];
-
-    if (!best) return;
-
-    bestName.textContent = best.className;
-
-    bestPercent.textContent =
-      "Mức độ dự đoán: " +
-      (best.probability * 100).toFixed(1) + "%";
-
-    sorted.forEach((p, index) => {
-
-      const item = predictionList.children[index];
-
-      if (!item) return;
-
-      item.querySelector(".prediction-name").textContent =
-        p.className;
-
-      item.querySelector(".prediction-percent").textContent =
-        (p.probability * 100).toFixed(1) + "%";
-
-      item.querySelector(".progress-bar").style.width =
-        (p.probability * 100) + "%";
-    });
-  }
-
-  // Đổi camera trước / sau
-  async function switchCamera() {
-
-    if (!running) return;
-
-    facingMode =
-      facingMode === "environment" ? "user" : "environment";
-
-    await startCamera();
-  }
-
-  // Tắt camera
-  function stopCamera() {
-
+    cancelAnimationFrame(animationId);
     stopStream();
 
     video.style.display = "none";
-    preview.style.display = "none";
     placeholder.style.display = "block";
 
     startBtn.disabled = false;
     switchBtn.disabled = true;
     stopBtn.disabled = true;
 
-    setStatus("Camera đã được tắt.");
-  }
+    setStatus("Camera đã tắt.");
 
-  // Nhận diện ảnh tải lên
-  async function classifyImage(file) {
+}
 
-    if (!file || !file.type.startsWith("image/")) {
-      setStatus("Vui lòng chọn một tệp hình ảnh hợp lệ.", "error");
-      return;
+// Vòng lặp nhận diện
+async function loop(timestamp) {
+
+    if (!running) return;
+
+    if (timestamp - lastPredictTime >= 180 && !predicting) {
+        lastPredictTime = timestamp;
+        predicting = true;
+
+        try {
+            await predict(video);
+        } catch (error) {
+            console.error("Lỗi nhận diện:", error);
+        }
+
+        predicting = false;
     }
 
-    stopStream();
-
-    startBtn.disabled = true;
-    switchBtn.disabled = true;
-    stopBtn.disabled = true;
-
-    try {
-
-      await loadModel();
-
-      if (currentImageURL) {
-        URL.revokeObjectURL(currentImageURL);
-      }
-
-      currentImageURL = URL.createObjectURL(file);
-
-      preview.src = currentImageURL;
-
-      await new Promise((resolve, reject) => {
-        preview.onload = resolve;
-        preview.onerror = reject;
-      });
-
-      video.style.display = "none";
-      placeholder.style.display = "none";
-      preview.style.display = "block";
-
-      setStatus("Đang phân tích hình ảnh...");
-
-      const prediction = await model.predict(preview);
-
-      showPrediction(prediction);
-
-      setStatus(
-        "Đã nhận diện hình ảnh thành công.",
-        "success"
-      );
-
-    } catch (error) {
-
-      console.error(error);
-
-      setStatus(
-        "Không thể phân tích ảnh. Hãy thử lại.",
-        "error"
-      );
-
-    } finally {
-
-      startBtn.disabled = false;
+    if (running) {
+        animationId = requestAnimationFrame(loop);
     }
-  }
+}
 
-  // Gắn sự kiện
-  startBtn.addEventListener("click", startCamera);
+// Nhận diện ảnh bằng AI
+async function predict(image) {
 
-  switchBtn.addEventListener("click", switchCamera);
+    if (!model) return;
 
-  stopBtn.addEventListener("click", stopCamera);
+    const predictions = await model.predict(image);
 
-  uploadBtn.addEventListener("click", () => {
-    fileInput.click();
-  });
+    predictions.sort(
+        (a, b) => b.probability - a.probability
+    );
 
-  fileInput.addEventListener("change", async event => {
+    displayResults(predictions);
+}
 
-    const file = event.target.files[0];
+// Hiển thị kết quả
+function displayResults(predictions) {
 
-    if (file) {
-      await classifyImage(file);
+    if (!predictions.length) return;
+
+    const best = predictions[0];
+
+    document.getElementById("top-result").textContent =
+        best.className;
+
+    document.getElementById("top-percent").textContent =
+        (best.probability * 100).toFixed(1) + "%";
+
+    const container = document.getElementById("label-container");
+    container.innerHTML = "";
+
+    predictions.forEach(item => {
+
+        const percent = item.probability * 100;
+
+        const row = document.createElement("div");
+        row.className = "prediction";
+
+        const info = document.createElement("div");
+        info.className = "prediction-info";
+
+        const name = document.createElement("span");
+        name.textContent = item.className;
+
+        const value = document.createElement("span");
+        value.textContent = percent.toFixed(1) + "%";
+
+        info.appendChild(name);
+        info.appendChild(value);
+
+        const bar = document.createElement("div");
+        bar.className = "progress";
+
+        const fill = document.createElement("div");
+        fill.className = "progress-bar";
+        fill.style.width = percent.toFixed(1) + "%";
+
+        bar.appendChild(fill);
+        row.appendChild(info);
+        row.appendChild(bar);
+
+        container.appendChild(row);
+    });
+}
+
+// Chọn ảnh từ điện thoại hoặc máy tính
+document.getElementById("fileInput").addEventListener(
+    "change",
+    async function(event) {
+
+        const file = event.target.files[0];
+        if (!file) return;
+
+        try {
+            await loadModel();
+
+            setStatus("Đang phân tích hình ảnh...");
+
+            const image = new Image();
+            const imageURL = URL.createObjectURL(file);
+
+            image.onload = async function() {
+                try {
+                    await predict(image);
+                    setStatus(
+                        "Đã nhận diện hình ảnh thành công.",
+                        "success"
+                    );
+                } catch (error) {
+                    console.error(error);
+                    setStatus("Không thể phân tích hình ảnh.", "error");
+                } finally {
+                    URL.revokeObjectURL(imageURL);
+                    event.target.value = "";
+                }
+            };
+
+            image.onerror = function() {
+                URL.revokeObjectURL(imageURL);
+                setStatus("Không thể đọc tệp hình ảnh.", "error");
+                event.target.value = "";
+            };
+
+            image.src = imageURL;
+
+        } catch (error) {
+            console.error(error);
+            setStatus(error.message, "error");
+            event.target.value = "";
+        }
     }
+);
 
-    // Cho phép chọn lại cùng một ảnh
-    fileInput.value = "";
-  });
-
-  // Dừng camera khi rời khỏi trang
-  window.addEventListener("pagehide", stopCamera);
-
-})();
+// Tạm dừng camera khi rời khỏi trang
+document.addEventListener("visibilitychange", function() {
+    if (document.hidden && running) {
+        stopCamera();
+    }
+});
 </script>
 
 </body>
